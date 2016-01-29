@@ -1,2 +1,2 @@
 # GodLightEngine
-a game engine base on Irrlicht by C#
+a game engine base on IrrlichtLime by C#
