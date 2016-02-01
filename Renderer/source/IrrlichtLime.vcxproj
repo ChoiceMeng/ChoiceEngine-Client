@@ -109,8 +109,7 @@
       <AdditionalLibraryDirectories>C:\Program Files %28x86%29\Microsoft SDKs\Windows\v7.1A\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y "..\irrlicht\dll\$(Configuration)\Irrlicht.dll" "$(SolutionDir)bin\$(Configuration)\Irrlicht.dll" &gt;nul
-copy /y "..\doc\IrrlichtLime.xml" "$(SolutionDir)bin\$(Configuration)\" &gt;nul
+      <Command>copy /y "..\..\Renderer\irrlicht\dll\$(Configuration)\Irrlicht.dll" "$(SolutionDir)bin\$(Configuration)\Irrlicht.dll" &gt;nul
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -157,8 +156,7 @@ copy /y "..\doc\IrrlichtLime.xml" "$(SolutionDir)bin\$(Configuration)\" &gt;nul
       <AdditionalLibraryDirectories>C:\Program Files %28x86%29\Microsoft SDKs\Windows\v7.1A\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>copy /y "..\..\Renderer\irrlicht\dll\$(Configuration)\Irrlicht.dll" "$(SolutionDir)bin\$(Configuration)\Irrlicht.dll" &gt;nul</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
