@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 using IrrlichtLime;
 using IrrlichtLime.Core;
@@ -9,7 +10,7 @@ using IrrlichtLime.Video;
 using IrrlichtLime.Scene;
 using IrrlichtLime.GUI;
 
-namespace TestApp
+namespace App
 {
     class Program
     {
