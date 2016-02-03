@@ -33,4 +33,4 @@ smgr->drawAll()会按照以下顺序绘制SceneNode,向surface颜色缓冲写数据,需要注意CScen
 driver->endScene()负责才真正负责向设备提交绘图调用:Presenter->present(BackBuffer, WindowId, SceneSourceRect);
 解惑点:
 Q:相机对渲染node的剔除在哪里处理?
-A:CSceneManager是Root SceneNode，smgr->drawAll()会调用自身OnRegisterSceneNode()，遍历调用子SceneNode的OnRegisterSceneNode().而子类的OnRegisterSceneNode()中会再反过来调用SceneManager->registerNodeForRendering(this, scene::ESNRP_SOLID),在CSceneManager::registerNodeForRendering里通过isCulled(const ISceneNode* node)判断要渲染的SceneNode是否在相机视锥内，如果在才放入相应的渲染物件列表中。
+A:CSceneManager是Root SceneNode，smgr->drawAll()会调用自身OnRegisterSceneNode()，遍历调用子SceneNode的OnRegisterSceneNode().而子类的OnRegisterSceneNode()中会再反过来调用SceneManager->registerNodeForRendering(this, scene::ESNRP_SOLID),在CSceneManager::registerNodeForRendering里通过isCulled(const ISceneNode* node)判断要渲染的SceneNode是否在相机视锥内，如果在相机视锥体里才放入相应的渲染物件列表中。
