@@ -2,3 +2,35 @@ IrrlichtLime首先对Irrlicht使用C++进行了一次二次封装。
 为什么要进行一次二次封装，而不能直接把Irrlicht的代码直接导出dll在c#中使用呢？
 因为c++部分的Irrlicht在内存分配和管理方面是c#无法管理的，所以需要一个可托管的工程来进行管理。所以你看到诸如GUIColorSelectDialog^的东西，还有gcnew关键字，当然这是微软自己搞的一套语法来使c++得指针回归到c#可托管的模式。具体可查阅相关资料。
 IrrlichtLime仍然需要Irrlicht.dll原始代码进行底层绘制，也就是说IrrlichtLime只对需要的部分进行了封装Coding
+
+Irrlicht渲染流程
+程序主渲染流程:
+while(device->run())
+{
+	/*
+	Anything can be drawn between a beginScene() and an endScene()
+	call. The beginScene() call clears the screen with a color and
+	the depth buffer, if desired. Then we let the Scene Manager and
+	the GUI Environment draw their content. With the endScene()
+	call everything is presented on the screen.
+	*/
+	driver->beginScene(true, true, SColor(255,100,101,140));
+
+	smgr->drawAll();
+	guienv->drawAll();
+
+	driver->endScene();
+}
+driver->beginScene()会为渲染做好准备，清理缓冲
+smgr->drawAll()会按照以下顺序绘制SceneNode,向surface颜色缓冲写数据,需要注意CSceneManager是Root SceneNode：
+//render camera scenes
+//render lights scenes
+// render skyboxes
+// render default objects
+// render shadows
+// render transparent objects.
+// render transparent effect objects.
+driver->endScene()负责才真正负责向设备提交绘图调用:Presenter->present(BackBuffer, WindowId, SceneSourceRect);
+解惑点:
+Q:相机对渲染node的剔除在哪里处理?
+A:CSceneManager是Root SceneNode，smgr->drawAll()会调用自身OnRegisterSceneNode()，遍历调用子SceneNode的OnRegisterSceneNode().而子类的OnRegisterSceneNode()中会再反过来调用SceneManager->registerNodeForRendering(this, scene::ESNRP_SOLID),在CSceneManager::registerNodeForRendering里通过isCulled(const ISceneNode* node)判断要渲染的SceneNode是否在相机视锥内，如果在才放入相应的渲染物件列表中。
