@@ -7,3 +7,6 @@
 c#项目:调试-启用本机代码调试
 c++dll与pdb文件和c#的exe放在同一目录
 工具-调试-常规:去掉"启用‘仅我的代码’”;开启"使用托管兼容项目.
+
+注:
+irrlichtLime基于irrlicht1.9.0，如果需要更新，将新版dll和Lib放入GodLightEngine\Renderer\irrlicht下的对应目录.
