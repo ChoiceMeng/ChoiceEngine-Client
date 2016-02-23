@@ -2,8 +2,9 @@ IrrlichtLime首先对Irrlicht使用C++进行了一次二次封装。
 为什么要进行一次二次封装，而不能直接把Irrlicht的代码直接导出dll在c#中使用呢？
 因为c++部分的Irrlicht在内存分配和管理方面是c#无法管理的，所以需要一个可托管的工程来进行管理。所以你看到诸如GUIColorSelectDialog^的东西，还有gcnew关键字，当然这是微软自己搞的一套语法来使c++得指针回归到c#可托管的模式。具体可查阅相关资料。
 IrrlichtLime仍然需要Irrlicht.dll原始代码进行底层绘制，也就是说IrrlichtLime只对需要的部分进行了封装Coding
-
-Irrlicht渲染流程
+---------------------------------------------------------------IrrlichtDemos分析
+01.HelloWorld
+-------Irrlicht渲染流程
 程序主渲染流程:
 while(device->run())
 {
@@ -34,3 +35,316 @@ driver->endScene()负责才真正负责向设备提交绘图调用:Presenter->present(BackBuffer
 解惑点:
 Q:相机对渲染node的剔除在哪里处理?
 A:CSceneManager是Root SceneNode，smgr->drawAll()会调用自身OnRegisterSceneNode()，遍历调用子SceneNode的OnRegisterSceneNode().而子类的OnRegisterSceneNode()中会再反过来调用SceneManager->registerNodeForRendering(this, scene::ESNRP_SOLID),在CSceneManager::registerNodeForRendering里通过isCulled(const ISceneNode* node)判断要渲染的SceneNode是否在相机视锥内，如果在相机视锥体里才放入相应的渲染物件列表中。
+
+02.Quake3Map
+------文件load：
+/*
+	To display the Quake 3 map, we first need to load it. Quake 3 maps
+	are packed into .pk3 files which are nothing else than .zip files.
+	So we add the .pk3 file to our irr::io::IFileSystem. After it was added,
+	we are able to read from the files in that archive as if they are
+	directly stored on the disk.
+	*/
+	device->getFileSystem()->addFileArchive("../../media/map-20kdm2.pk3");
+CFileSystem:
+构造函数里准备了六种loader:
+__IRR_COMPILE_WITH_PAK_ARCHIVE_LOADER_
+__IRR_COMPILE_WITH_NPK_ARCHIVE_LOADER_
+__IRR_COMPILE_WITH_TAR_ARCHIVE_LOADER_
+__IRR_COMPILE_WITH_WAD_ARCHIVE_LOADER_
+__IRR_COMPILE_WITH_MOUNT_ARCHIVE_LOADER_
+__IRR_COMPILE_WITH_ZIP_ARCHIVE_LOADER_
+addFileArchive时通过文件后缀找到对应的loader进行文件加载。
+值得一读的是CFileList::findFile中如何通过SFileListEntry来找到文件数据的(irrArray::T* data;)
+------获取资源
+scene::IAnimatedMesh* mesh = smgr->getMesh("20kdm2.bsp");就会从已经装载的文件中查找相应文件数据(binary查找)
+------Octree场景节点
+node = smgr->addOctreeSceneNode(mesh->getMesh(0), 0, -1, 1024);
+这几行程序表示从网格对象中建立一个场景节点并加入场景管理器中，网格对象只有加入场景管理器才能被irrlicht绘制，否则只是保存在内存中。    这里程序选择将场景节点按照八叉树分割管理，每个八叉树节点的多边形数量不少于1024个
+
+03.CustiomSceneNode
+-----自定义场景节点类
+class CSampleSceneNode : public scene::ISceneNode
+自定义的场景节点继承于ISceneNode后重载以下几个接口变可以订制自己的绘制接口:
+virtual void OnRegisterSceneNode()
+virtual void render()
+-----为场景节点添加动画
+scene::ISceneNodeAnimator* anim = smgr->createRotationAnimator(core::vector3df(0.8f, 0, 0.8f));
+
+if(anim)
+{
+	myNode->addAnimator(anim);
+	
+	/*
+	I'm done referring to anim, so must
+	irr::IReferenceCounted::drop() this reference now because it
+	was produced by a createFoo() function. As I shouldn't refer to
+	it again, ensure that I can't by setting to 0.
+	*/
+	anim->drop();
+	anim = 0;
+}
+
+04.Movement
+------事件监听者
+IrrlichtDevice* device = createDevice(driverType,
+			core::dimension2d<u32>(640, 480), 16, false, false, false, &receiver);
+在创建设备时传进一个事件监听类对象，该类通过重载OnEvent、IsKeyDown来判断是否点击相应按键
+
+05.2DGraphics
+-----装载图片
+video::ITexture* images = driver->getTexture("../../media/2ddemo.png");
+	driver->makeColorKeyTexture(images, core::position2d<s32>(0,0));
+-----绘制2d精灵
+// draw fire & dragons background world
+			driver->draw2DImage(images, core::position2d<s32>(50,50),
+				core::rect<s32>(0,0,342,224), 0,
+				video::SColor(255,255,255,255), true);
+
+07.Collision
+首先用枚举类型，定义了三个ID常量，ID_IsNotPickable = 0,IDFlag_IsPickable = 1 << 0,IDFlag_IsHighlightable = 1 << 1用来区别能否鼠标拾取和高光显示。它们是用在例子中射线对三角形面的碰撞检测中。
+    然后在第二例中的Quake3地形模型建立后，创建了一个三角形选择器，并把它设置为地形模型使用的三角形选择器。注意，三角形选择器是irr碰撞检测的核心，irr的所有碰撞检测都是基于它的，没有它，就没有碰撞了。创建三角形选择器的方法在irr场景管理器里，主要有createTriangleSelector、 createTriangleSelectorFromBoundingBox、 createOctreeTriangleSelector 和 createTerrainTriangleSelector 几个三角形选择器，当然不够用的话，irr允许自己做扩展。这么多三角形选择器的创建方法，怎么知道什么时候该使用什么方法创建呢？从数量上看的确有点晕，其实并不复杂，它们基本是跟创建的场景节点类型是配套的，从方法的名称和参数上看，就基本知道自己该选哪一个了。createTriangleSelector从名字看，似乎是万能的，看参数应该能体会到它主要是用来给动画场景节点配套使用的，或者自己要用不同于场景节点的mesh做为碰撞检测依据时使用的； createTriangleSelectorFromBoundingBox 这个一看名字就很简单，使用包围盒作为碰撞检测的三角形选择器，这样可以大幅减少测试碰撞的三角形数；createOctreeTriangleSelector创建八叉树三角形选择器，这明摆着跟八叉树场景节点有关，用它做与八叉树节点配套，肯定跟八叉树场景节点一样有优化的效果； createTerrainTriangleSelector 创建一个地形三角形选择器，这个跟后面官方例子中使用的irr地形生成器生成的地形配套使用。创建好三角形选择器后，使用场景节点的setTriangleSelector方法，就可以将三角形选择器设为场景节点所使用的三角形检测器。例子中用相似的方法，为四个不同的动画模型场景节点也设置了三角形选择器。
+    三角形选择器设置好后，就可以使用irr的碰撞检测功能了。irr将碰撞检测功能封装成一个碰撞管理器ISceneCollisionManager，它属于场景管理器的一部分，通过场景管理器的getSceneCollisionManager方法，就能获得碰撞管理器。例子中为了简单，同时能够实时看到碰撞检测效果，将碰撞管理器的使用代码全放到了帧循环中。鼠标拾取时，其实就是用碰撞管理器检查从屏幕中心到鼠标指向的位置的射线与三角形面是否相交。因此首先得计算出射线的方程。代码如下：
+    定义一个射线结构
+    core::line3d ray;
+    将摄像机的位置设为射线的起点
+    ray.start = camera->getPosition();
+    将摄像机的镜头对准方向前方1000的位置设为射线的终点，这样射线就准备好了。
+    ray.end = ray.start + (camera->getTarget() - ray.start).normalize() * 1000.0f;
+    使用碰撞管理器的getSceneNodeAndCollisionPointFromRay(射线，交点，相交的三角形，检测掩码，检测的根场景节点)方法，得到返回的相交的场景节点。这里的检测掩码设置为非0后，将只对场景节点ID与掩码位相符的节点进行射线的碰撞检测。    找到鼠标拾取的场景节点后，将该节点的材质光照属性设为不启用光照，这时就成高亮显示该场景节点了，同时更改节点ID。
+    物体之间的碰撞检测，例子中将它用到了摄像机节点上。通过场景管理器 createCollisionResponseAnimator 创建了一个以前例子中说过的场景节点运动器，这个函数的第一个参数指定了用于碰撞检测的三角形选择器；第二参数是与第一个参数发生碰撞的场景节点，第三个参数是设置发生碰撞的场景节点的大小，它是一个椭球状包围体；第四个参数是重力各方向的大小；最后一个参数是发生碰撞的场景节点在椭球包围体中的偏移量，默认的时候是在椭球体的中心，设置这个偏移量可以模拟摄像机在身体的位置。这个运动器创建好后，把它添加到摄像机场景节点，移动镜头时就自动产生运动物体与其它物体的碰撞反应。
+本例中只设置了摄像机与地形的碰撞，因此移动摄像机时，只会与场景中的地面墙壁等发生碰撞，而对4个游戏人物直接穿过。
+    例子中绘制了一个红点代替被隐藏的鼠标指针，效果跟《生化危机4》瞄准到目标后显示的哪个红点一样。这个红点其实是创建了一个告示板场景节点IBillboardSceneNode，它是一个2d效果的场景节点，用来显示一张纹理，不管怎么旋转总是面向用户的，不会随距离远近发生透视现象。自己再用IVideoDriver的绘制一条红线，就可以完美山寨《生化危机4》瞄准线了，当描到目标就把IBillboardSceneNode设为显示，没描到目标就关闭。
+    要想使irr产生更复杂的物理效果，如车撞击到一个锥筒，锥筒会自己飞出去，飞行方向、距离等与车的速度方向、撞击部位有关。就得自己动手写相关的代码或者找个物理引擎来计算每一帧后物体的位置，旋转角度等数据来重新设置场景节点。光靠irr的碰撞管理器和运动器是做不到这么复杂效果。
+
+08.SpecialFX
+-----水特效实现
+动态水面一定是波澜起伏的，如果画面定格，看上去就像连绵起伏的山丘。irr提供了一个创建丘陵平面状的Mesh工具addHillPlaneMesh(名字，瓦片大小，瓦片数量，材质，山高，山峰数量，纹理重复数)，用它就可以做出像有波浪的水面。但现在的水面是静态的，还需要控制水面上下起伏波动。要做出这种效果，似乎算法还真有点复杂，不过irr已经提供了水平波动效果的方法，只需要把刚建好的mesh添加到水表面场景节点，就会有波动的效果了。添加方法就是使用场景管理器里的addWaterSurfaceSceneNode，第一个参数是使用的mesh，第二个是波浪的高度，第三个是波速，第四个是波长，后边的参数跟其他场景节点没什么区别，就是父节点、位置、旋转和缩放这些。水表面看起来一般是有反光和阴影而且透明，这里的使用的材质就不能跟前面的例子一样了。irr里的EMT_REFLECTION_2_LAYER材质类型，使用了两层纹理，同时有反射效果。第一层纹理做水底物体透视纹理，第二层纹理做水表提供反射和阴影效果。使用这个材质后，看起来的确比较像水面了。不过还是有很多瑕疵，首先这个水不透明，有人物站在水中时，水底的纹理会直接把水下部分遮住；然后是水表纹理的花纹，能够明显的发觉并没有移动。
+这里的两个枚举E_MATERIAL_FLAG、E_MATERIAL_TYPE如何控制材质渲染的，值得借鉴。
+-----粒子系统
+scene::IParticleSystemSceneNode* ps =
+		smgr->addParticleSystemSceneNode(false);//先创建一个粒子系统节点
+// 再为粒子系统节点创建一个发射器
+scene::IParticleEmitter* em = ps->createBoxEmitter(
+			core::aabbox3d<f32>(-7,0,-7,7,1,7), // emitter size
+			core::vector3df(0.0f,0.06f,0.0f),   // initial direction
+			80,100,                             // emit rate
+			video::SColor(0,255,255,255),       // darkest color
+			video::SColor(0,255,255,255),       // brightest color
+			800,2000,0,                         // min and max age, angle
+			core::dimension2df(10.f,10.f),         // min size
+			core::dimension2df(20.f,20.f));        // max size
+粒子系统的更新:
+CSceneManager::drawAll()-》CParticleSystemSceneNode::OnRegisterSceneNode()-》doParticleSystem()
+在各子类型的发射器中做Emitter->emitt。如CParticleBoxEmitter、CParticleCylinderEmitter、CParticleMeshEmitter，其中没搞明白的是Particles如何循环利用已分配的粒子循环利用，待细看Particles.set_used(0)与core::array<SParticle> Particles相关代码。
+粒子的绘制:
+void CParticleSystemSceneNode::render()
+-----动态阴影:
+anode->addShadowVolumeSceneNode();
+相关思路应该也是动态计算灯光与地面的投影面，贴上阴影贴图，待细读。
+参考void CShadowVolumeSceneNode::updateShadowVolumes()
+
+10.Shaders
+-----创建shader:
+video::IGPUProgrammingServices* gpu = driver->getGPUProgrammingServices();
+newMaterialType1 = gpu->addHighLevelShaderMaterialFromFiles(
+				vsFileName, "vertexMain", video::EVST_VS_1_1,
+				psFileName, "pixelMain", video::EPST_PS_1_1,
+				mc, video::EMT_SOLID, 0, shadingLanguage);// 返回的是一个大于23(E_MATERIAL_TYPE.EMT_ONETEXTURE_BLEND)的id,每次创建会分配一个新的id。
+------ShaderCallBack
+Shader也需要用到很多矩阵，但是这些矩阵信息不再是irr自动提供，而是通过继承IShaderConstantSetCallBack接口类提供矩阵信息给Shader。在该例中使用了一些简单的顶点Shader,它会根据摄像机的位置计算顶点的颜色。实现这功能，需要为Shader提供转换法线的逆世界矩阵、转换坐标的剪切矩阵、摄像机位置和物体在世界矩阵中的位置。这些数据将在自己继承的IShaderConstantSetCallBack接口类的OnSetConstanes()方法中使用。OnSetConstanes()会在每次设置材质的时候被调用。它的参数IMaterialRendererServices接口类的setVertexShaderConstant()方法用来设置Shader所需的数据。下面看如何继承IShaderConstantSetCallBack接口类。
+-----skybox:
+driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, false);
+
+	smgr->addSkyBoxSceneNode(
+		driver->getTexture("../../media/irrlicht2_up.jpg"),
+		driver->getTexture("../../media/irrlicht2_dn.jpg"),
+		driver->getTexture("../../media/irrlicht2_lf.jpg"),
+		driver->getTexture("../../media/irrlicht2_rt.jpg"),
+		driver->getTexture("../../media/irrlicht2_ft.jpg"),
+		driver->getTexture("../../media/irrlicht2_bk.jpg"));
+
+driver->setTextureCreationFlag(video::ETCF_CREATE_MIP_MAPS, true);
+
+11.PerPixelLighting
+-----逐像素光照与逐顶点光照
+逐顶点光照
+所谓逐顶点光照，简单地说就是在vetext shader中计算光照颜色，该过程将为每个顶点计算一次光照颜色，然后在通过顶点在多边形所覆盖的区域对像素颜色进行线形插值。现实中，光照值取决于光线角度，表面法线，和观察点（对于镜面高光来说）。
+逐像素光照
+逐像素光照是对所有光照元素进行单独插值，简单地说就是在pixelshader中计算颜色。
+由上面两段代码对比可知，算法实际上是一样的，只不过颜色的计算过程一个放在VertexShader中，而另一个放在PixelShader中。程序截图如下，源代码中可以通过按空格键切换两种效果，逐像素光照效果好：
+使用逐像素光照的另一个好处是可以在渲染时添加并不存在的表面细节。通过bump map或normal map，可以在像素级别让原本平坦的表面表现出近似的凹凸效果。
+当然，由于逐像素的计算量要比逐顶点要大，所以请根据具体情况灵活选择，如果你使用BasicEffect，那么默认是使用逐顶点光照，你必须添加basicEffect.PreferPerPixelLighting=true才能开启逐像素光照。
+最后以上大部分文字来自于clayman博客中的The Complete Effect and HLSL Guide的第十二章，在此感谢。
+http://www.cnblogs.com/zengqh/archive/2012/07/02/2573845.html
+注意材质设置的代码，可能设置会去调用相应shader:room->setMaterialType(video::EMT_PARALLAX_MAP_SOLID);
+-----添加雾效
+增加雾的方法是IVideoDriver::setFog()。通过这个函数你可以设置不同类型的雾。在本例中，使用象素雾，因为它更适合本例中的材质风格(我也不清楚为何这样说，不过看起来效果不差)。这里需要注意到是，不是设置了setFog就有雾里，而是每个需要雾特效影响的场景节点都需要开启雾特效，在场景节点中它是默认为关闭的。
+-----模型操控器
+//获取Mesh操控器
+    scene::IMeshManipulator *manipulator = smgr->getMeshManipulator();
+
+    //为Mesh创建一个带切线信息的副本
+    scene::IMesh* tangentSphereMesh =manipulator->createMeshWithTangents(earthMesh->getMesh(0));
+
+    //设置 Mesh 所有顶点的Alpha透明度为200
+    manipulator->setVertexColorAlpha(tangentSphereMesh, 200);
+
+    //放大模型50倍
+    core::matrix4 m;
+    m.setScale ( core::vector3df(50,50,50) );
+    manipulator->transform( tangentSphereMesh, m );
+    earth = smgr->addMeshSceneNode(tangentSphereMesh);
+    earth->setPosition(core::vector3df(-70,130,45));
+-----生成法线图
+//读取高度图，并用它生成法线图
+    video::ITexture* earthNormalMap = driver->getTexture("../../media/earthbump.jpg");
+    if (earthNormalMap)
+    {
+        driver->makeNormalMapTexture(earthNormalMap, 20.0f);
+        earth->setMaterialTexture(1, earthNormalMap);
+        earth->setMaterialType(video::EMT_NORMAL_MAP_TRANSPARENT_VERTEX_ALPHA);
+    }
+------设置公告板
+scene::IBillboardSceneNode* bill =smgr->addBillboardSceneNode(light1, core::dimension2d(60, 60));
+
+12.Terrain Rendering
+-----创建Terrain Node:
+scene::ITerrainSceneNode* terrain = smgr->addTerrainSceneNode("../../media/terrain-heightmap.bmp",//高度图
+        0,                    //父节点
+        -1,                    //节点ID
+        core::vector3df(0.f, 0.f, 0.f),        // 位置
+        core::vector3df(0.f, 0.f, 0.f),        // 旋转
+        core::vector3df(40.f, 4.4f, 40.f),    // 缩放
+        video::SColor ( 255, 255, 255, 255 ),    // 顶点颜色
+        5,                    // LOD最大值
+        scene::ETPS_17,                //地形块大小
+        4                    // 平滑因子
+        );
+    terrain->setMaterialFlag(video::EMF_LIGHTING, false);// 关闭灯光
+    terrain->setMaterialTexture(0,driver->getTexture("../../media/terrain-texture.jpg"));//设置地形的第一层纹理
+    terrain->setMaterialTexture(1,driver->getTexture("../../media/detailmap3.jpg"));//设置地形的第二层纹理
+    terrain->setMaterialType(video::EMT_DETAIL_MAP);//设置材质类型
+    terrain->scaleTexture(1.0f, 20.0f);//缩放纹理
+-----地形数据
+如果需要访问地形顶点数据，可以按下面代码的方法直接访问
+    scene::CDynamicMeshBuffer* buffer = new cene::CDynamicMeshBuffer(video::EVT_2TCOORDS, video::EIT_16BIT);
+    terrain->getMeshBufferForLOD(*buffer, 0);
+    video::S3DVertex2TCoords* data = (video::S3DVertex2TCoords*)buffer->getVertexBuffer().getData();
+    这样就可以直接用索引中data缓存上进行数据操作了
+    buffer->drop();
+不再使用时同样需要drop缓存。
+
+13.RenderToTexture
+------创建Render Target
+// create render target
+	video::IRenderTarget* renderTarget = 0;
+// 渲染目标纹理
+video::ITexture* renderTargetTex = 0;
+renderTargetTex = driver->addRenderTargetTexture(core::dimension2d<u32>(256, 256), "RTT1", video::ECF_A8R8G8B8);
+		video::ITexture* renderTargetDepth = driver->addRenderTargetTexture(core::dimension2d<u32>(256, 256), "DepthStencil", video::ECF_D16);
+// 为render target设置纹理
+renderTarget = driver->addRenderTarget();
+renderTarget->setTexture(renderTargetTex, renderTargetDepth);
+------渲染循环
+这个例子中的帧循环跟以往的例子不同。以前每帧只绘制场景一次，这次每帧绘制场景两次。第一次绘制使用的是fixedCam固定摄像机，通过它截取绘制到纹理上的场景图像，这次绘制用户看不到，测试立方体在这次绘制中不需要被显示，它将被隐藏掉。第二次绘制的是用户看到的场景，它会将第一次绘制的纹理显示在测试立方体上。
+while(device->run())
+if (device->isWindowActive())
+{
+    driver->beginScene(true, true, 0);
+    if (rt)
+    {
+        //绘制渲染纹理中的场景
+        
+        //设置渲染目标纹理
+        driver->setRenderTarget(rt, true, true, video::SColor(0,0,0,255));
+
+        //将测试立方体设为不可见
+        test->setVisible(false);
+        //设置固定摄像机为活动摄像机，用于镜面取景
+        smgr->setActiveCamera(fixedCam);
+
+        // 绘制整个场景并将其绘制到渲染缓冲区
+        smgr->drawAll();
+
+        //设置为默认渲染目标
+        // 缓冲区已经被销毁，因此清除它
+        driver->setRenderTarget(0, true, true, 0);
+
+        //设置立方体可见
+        test->setVisible(true);
+        //更换活动摄像机为FPS摄像机
+        smgr->setActiveCamera(fpsCamera);
+    }
+
+    // 第二次绘制 绘制普通场景
+    smgr->drawAll();
+    env->drawAll();
+
+    driver->endScene();
+
+    // 在标题栏显示帧速
+    int fps = driver->getFPS();
+    if (lastFPS != fps)
+    {
+        core::stringw str = L"Irrlicht Engine - Render to Texture and Specular Highlights example";
+        str += " FPS:";
+        str += fps;
+
+        device->setWindowCaption(str.c_str());
+        lastFPS = fps;
+    }
+}
+渲染到纹理使用的不是普通纹理，而是IVideoDriver::addRenderTargetTexture()创建的可修改纹理。使用IVideoDriver::setRenderTarget()设置渲染目标。使用ISceneManager::setActiveCamera()设置活动摄像机，通过它就能完成切换摄像机的功能。
+
+18.SplitScreen
+-----创建并设置四个摄像机
+/*
+Now we create our four cameras. One is looking at the model
+from the front, one from the top and one from the side. In
+addition there's a FPS-camera which can be controlled by the
+user.
+*/
+// Create 3 fixed and one user-controlled cameras
+//Front
+camera[0] = smgr->addCameraSceneNode(0, vector3df(50,0,0), vector3df(0,0,0));
+//Top
+camera[1] = smgr->addCameraSceneNode(0, vector3df(0,50,0), vector3df(0,0,0));
+//Left
+camera[2] = smgr->addCameraSceneNode(0, vector3df(0,0,50), vector3df(0,0,0));
+//User-controlled
+camera[3] = smgr->addCameraSceneNodeFPS();
+// don't start at sydney's position
+if (camera[3])
+	camera[3]->setPosition(core::vector3df(-50,0,-50));
+-----SplitViewport
+//Set the viewpoint to the whole screen and begin scene
+driver->setViewPort(rect<s32>(0,0,ResX,ResY));
+driver->beginScene(true,true,SColor(255,100,100,100));
+//If SplitScreen is used
+if (SplitScreen)
+{
+	//Activate camera1
+	smgr->setActiveCamera(camera[0]);
+	//Set viewpoint to the first quarter (left top)
+	driver->setViewPort(rect<s32>(0,0,ResX/2,ResY/2));
+	//Draw scene
+	smgr->drawAll();
+	//Activate camera2
+	smgr->setActiveCamera(camera[1]);
+	//Set viewpoint to the second quarter (right top)
+	driver->setViewPort(rect<s32>(ResX/2,0,ResX,ResY/2));
+	//Draw scene
+	smgr->drawAll();
+	//Activate camera3
+	smgr->setActiveCamera(camera[2]);
+	//Set viewpoint to the third quarter (left bottom)
+	driver->setViewPort(rect<s32>(0,ResY/2,ResX/2,ResY));
+	//Draw scene
+	smgr->drawAll();
+	//Set viewport the last quarter (right bottom)
+	driver->setViewPort(rect<s32>(ResX/2,ResY/2,ResX,ResY));
+}
+//Activate camera4
+smgr->setActiveCamera(camera[3]);
+
