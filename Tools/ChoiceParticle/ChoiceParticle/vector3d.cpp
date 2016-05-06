@@ -60,5 +60,5 @@ void Vector3D::Normalize()
 
 Vector3D Vector3D::zero()
 {
-	return *(new Vector3D(0, 0, 0));
+	return Vector3D(0, 0, 0);
 }
