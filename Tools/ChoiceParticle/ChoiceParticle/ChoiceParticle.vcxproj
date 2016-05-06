@@ -52,12 +52,12 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>D:\GodLightEngine\Tools\ChoiceParticle\ChoiceParticle\ogl</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ChoiceParticle\Dependencies</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\GodLightEngine\Tools\ChoiceParticle\ChoiceParticle\ogl</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\ChoiceParticle\Dependencies</AdditionalLibraryDirectories>
       <AdditionalDependencies>glut32.lib;glut.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>LIBCMT;MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
