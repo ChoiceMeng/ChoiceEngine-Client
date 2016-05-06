@@ -7,7 +7,7 @@
 //#include<gl/gl.h>  
 
 
-
+GLUquadricObj *mySphere;
 void renderScene(void)
 
 {
