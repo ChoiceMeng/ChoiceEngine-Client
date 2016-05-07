@@ -52,13 +52,13 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\ChoiceParticle\Dependencies</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\ChoiceParticle\Dependencies;..\ChoiceParticle\Dependencies\SDL-1.2.15\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\ChoiceParticle\Dependencies</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glut32.lib;glut.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\ChoiceParticle\Dependencies;..\ChoiceParticle\Dependencies\SDL-1.2.15\lib\x86</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glut32.lib;glut.lib;%(AdditionalDependencies);SDL.lib;SDLmain.lib;</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>LIBCMT;MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
@@ -81,11 +81,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="particalsystem.cpp" />
     <ClCompile Include="vector3d.cpp" />
     <ClCompile Include="Mass.cpp" />
     <ClCompile Include="Triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="particalsystem.h" />
+    <ClInclude Include="particle.h" />
     <ClInclude Include="vector3d.h" />
     <ClInclude Include="Mass.h" />
     <ClInclude Include="stdafx.h" />
