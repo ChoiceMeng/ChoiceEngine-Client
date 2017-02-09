@@ -14,11 +14,15 @@ public ref class CursorControl : ReferenceCounted
 {
 public:
 
-	void SetReferenceRect(Recti^ rect_or_null);
+	CursorIcon AddIcon(CursorSprite^ icon);
+	void ChangeIcon(CursorIcon iconId, CursorSprite^ sprite);
+	void SetReferenceRect(Nullable<Recti> rect_or_null);
 
+	property CursorIcon ActiveIcon { CursorIcon get(); void set(CursorIcon value); }
 	property CursorPlatformBehavior PlatformBehavior { CursorPlatformBehavior get(); void set(CursorPlatformBehavior value); }
-	property Vector2Di^ Position { Vector2Di^ get(); void set(Vector2Di^ value); }
-	property Vector2Df^ RelativePosition { Vector2Df^ get(); void set(Vector2Df^ value); }
+	property Vector2Di Position { Vector2Di get(); void set(Vector2Di value); }
+	property Vector2Df RelativePosition { Vector2Df get(); }
+	property Dimension2Di^ SupportedIconSize { Dimension2Di^ get(); }
 	property bool Visible { bool get(); void set(bool value); }
 
 	virtual String^ ToString() override;

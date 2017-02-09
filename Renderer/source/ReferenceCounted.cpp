@@ -25,36 +25,36 @@ bool ReferenceCounted::operator != (ReferenceCounted^ v1, ReferenceCounted^ v2)
 	return !(v1 == v2);
 }
 
+bool ReferenceCounted::Equals(ReferenceCounted^ other)
+{
+	return (this == other);
+}
+
+bool ReferenceCounted::Equals(Object^ other)
+{
+	if (other == nullptr)
+		return false;
+	ReferenceCounted^ otherCasted = dynamic_cast<ReferenceCounted^>(other);
+	if (otherCasted != nullptr)
+		return Equals(otherCasted);
+	else
+		return false;
+}
+
+int ReferenceCounted::GetHashCode()
+{
+	return (int)m_ReferenceCounted;	//returns the first four bytes of the pointer
+}
+
 ReferenceCounted::ReferenceCounted(irr::IReferenceCounted* referenceCounted_or_null)
 {
 	m_ReferenceCounted = referenceCounted_or_null;
 }
 
-ReferenceCounted::~ReferenceCounted()
-{
-	if (m_ReferenceCounted != nullptr) 
-		Drop();
-	m_ReferenceCounted = nullptr;
-}
-
-ReferenceCounted::!ReferenceCounted()
-{
-	// In theory, Drop should be called here in finalizer
-	//  in practice, Irrlicht does not consistently grab
-	//  pointers so not calling drop is consistent with existing code
-	//  but the ~ method due to Dispose gives us better explicit control
-	m_ReferenceCounted = nullptr;
-}
-
 bool ReferenceCounted::Drop()
 {
 	LIME_ASSERT(m_ReferenceCounted != nullptr);
-	if (irr::IReferenceCounted* ref = m_ReferenceCounted)
-	{
-		m_ReferenceCounted = nullptr;
-		return ref->drop();
-	}
-	return false;
+	return m_ReferenceCounted->drop();
 }
 
 void ReferenceCounted::Grab()

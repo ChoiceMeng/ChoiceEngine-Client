@@ -4,82 +4,35 @@
 
 public:
 
-	_REFCLASS_()
-		: Lime::NativeValue<_WRAPCLASS_>(true)
+	Vector3Df Position;
+	Vector3Df Normal;
+	Color Color;
+	Vector2Df TCoords;
+	
+	virtual bool Equals(IVertex3D^ other) sealed
 	{
-		m_NativeValue = new _WRAPCLASS_();
+		if (other == nullptr)
+			return false;
+
+		if (other->GetType() == _REFCLASS_::typeid)
+			return Equals((_REFCLASS_)other);
+		else
+			return (Position.Equals(other->Position) &&
+					Normal.Equals(other->Normal) &&
+					Color.Equals(other->Color) &&
+					TCoords.Equals(other->TCoords));
 	}
 
-	_REFCLASS_(_REFCLASS_^ copy)
-		: Lime::NativeValue<_WRAPCLASS_>(true)
+	virtual bool Equals(Object^ other) override sealed
 	{
-		LIME_ASSERT(copy != nullptr);
-		m_NativeValue = new _WRAPCLASS_(*copy->m_NativeValue);
-	}
+		if (other == nullptr)
+			return false;
 
-	_REFCLASS_^ GetInterpolated(_REFCLASS_^ other, float d)
-	{
-		LIME_ASSERT(other != nullptr);
-		LIME_ASSERT(d >= 0.0f && d <= 1.0f);
-
-		return gcnew _REFCLASS_(m_NativeValue->getInterpolated(*other->m_NativeValue, d));
-	}
-
-	property Vector3Df^ Position
-	{
-		Vector3Df^ get()
-		{
-			return gcnew Vector3Df(m_NativeValue->Pos);
-		}
-		void set(Vector3Df^ value)
-		{
-			LIME_ASSERT(value != nullptr);
-			m_NativeValue->Pos = *value->m_NativeValue;
-		}
-	}
-
-	property Vector3Df^ Normal
-	{
-		Vector3Df^ get()
-		{
-			return gcnew Vector3Df(m_NativeValue->Normal);
-		}
-		void set(Vector3Df^ value)
-		{
-			LIME_ASSERT(value != nullptr);
-			m_NativeValue->Normal = *value->m_NativeValue;
-		}
-	}
-
-	property Video::Color^ Color
-	{
-		Video::Color^ get()
-		{
-			return gcnew Video::Color(m_NativeValue->Color);
-		}
-		void set(Video::Color^ value)
-		{
-			LIME_ASSERT(value != nullptr);
-			m_NativeValue->Color = *value->m_NativeValue;
-		}
-	}
-
-	property Vector2Df^ TCoords
-	{
-		Vector2Df^ get()
-		{
-			return gcnew Vector2Df(m_NativeValue->TCoords);
-		}
-		void set(Vector2Df^ value)
-		{
-			LIME_ASSERT(value != nullptr);
-			m_NativeValue->TCoords = *value->m_NativeValue;
-		}
-	}
-
-	property VertexType Type
-	{
-		VertexType get() { return (VertexType)m_NativeValue->getType(); }
+		IVertex3D^ castResult = dynamic_cast<IVertex3D^>(other);
+		if (castResult != nullptr)
+			return Equals(castResult);
+		else
+			return false;
 	}
 
 	virtual String^ ToString() override
@@ -87,10 +40,20 @@ public:
 		return String::Format("Vertex3D: Type={0}; Position={1}", Type, Position);
 	}
 
-internal:
+private:
 
-	_REFCLASS_(const _WRAPCLASS_& other)
-		: Lime::NativeValue<_WRAPCLASS_>(true)
-	{
-		m_NativeValue = new _WRAPCLASS_(other);
-	}
+	//Position property
+	virtual Vector3Df getPosition() sealed = IVertex3D::Position::get { return Position; }
+	virtual void setPosition(Vector3Df value) sealed = IVertex3D::Position::set { Position = value; }
+	
+	//Normal property
+	virtual Vector3Df getNormal() sealed = IVertex3D::Normal::get { return Normal; }
+	virtual void setNormal(Vector3Df value) sealed = IVertex3D::Normal::set { Normal = value; }
+
+	//Color property
+	virtual Video::Color getColor() sealed = IVertex3D::Color::get { return Color; }
+	virtual void setColor(Video::Color value) sealed = IVertex3D::Color::set { Color = value; }
+
+	//TCoords property
+	virtual Vector2Df getTCoords() sealed = IVertex3D::TCoords::get { return TCoords; }
+	virtual void setTCoords(Vector2Df value) sealed = IVertex3D::TCoords::set { TCoords = value; }

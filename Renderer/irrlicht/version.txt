@@ -1,9 +1,11 @@
-SRC: git@github.com:figment/Irrlicht.git
-REV: r4675
+SRC: https://irrlicht.svn.sourceforge.net/svnroot/irrlicht/trunk
+REV: 5269
 
 IrrCompileConfig.h
 	+ _IRR_WCHAR_FILESYSTEM
 
 Irrlicht10.0.vcxproj
 	General -> Character Set = "Use Unicode Character Set"
+	VC++ Directories -> Include Directories += ";..\..\..\DX89SDK\Include"
+	VC++ Directories -> Library Directories += ";..\..\..\DX89SDK\Lib\x86"
 	C/C++ -> Code Generation -> Runtime Library = "Multi-threaded Debug DLL" / "Multi-threaded DLL"

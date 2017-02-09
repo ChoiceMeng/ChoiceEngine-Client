@@ -1,0 +1,18 @@
++ 从version.txt中得到IrrlichtLime使用的SDK版本
++ 使用svn下载对应版本的Irrlicht源码
++ 将Irrlicht的source文件夹复制到IrrlichtLime的Irrlicht目录
++ 将Irrlicht工程添加到IrrlichtLime解决方案中
++ 修改Irrlicht工程设置(参照version.txt):
+    + 修改IrrCompileConfig.h251行打开注释_IRR_WCHAR_FILESYSTEM
+    + 修改字符集General -> Character Set = "Use Unicode Character Set"
+    + 修改生成后事件，把dll和pdb路径生成路径变为..\..\dll\Debug\
++ 调试设置:
+    要调试的C#项目:调试-启用本机代码调试
+    + 其他解决方案:
+        + c++dll与pdb文件和c#的exe放在同一目录
+        + 工具-调试-常规:去掉"启用‘仅我的代码’”;开启"使用托管兼容项目.
+
++ 其他信息:
+    + 该IrrlichtLime版本IrrlichtLime-1.5-NoExampleBinaries.zip	2017-01-02	25.2 MB	(https://sourceforge.net/projects/irrlichtlime/files/Irrlicht%20Lime/)
+    + 对应Irrlicht版本:SRC: https://irrlicht.svn.sourceforge.net/svnroot/irrlicht/trunk
+        REV: 5269

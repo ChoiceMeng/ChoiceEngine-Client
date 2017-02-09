@@ -119,27 +119,27 @@ void Attributes::AddValue(String^ attributeName, Object^ value)
 		}
 
 	case AttributeType::Color:
-		m_Attributes->addColor(n.c_str(), *((Video::Color^)value)->m_NativeValue);
+		m_Attributes->addColor(n.c_str(), (Video::Color)value);
 		return;
 
 	case AttributeType::Colorf:
-		m_Attributes->addColorf(n.c_str(), *((Video::Colorf^)value)->m_NativeValue);
+		m_Attributes->addColorf(n.c_str(), (Video::Colorf)value);
 		return;
 
 	case AttributeType::Vector3Df:
-		m_Attributes->addVector3d(n.c_str(), *((Vector3Df^)value)->m_NativeValue);
+		m_Attributes->addVector3d(n.c_str(), ((Vector3Df)value).ToNative());
 		return;
 
 	case AttributeType::Vector2Di:
-		m_Attributes->addPosition2d(n.c_str(), *((Vector2Di^)value)->m_NativeValue);
+		m_Attributes->addPosition2d(n.c_str(), ((Vector2Di)value).ToNative());
 		return;
 
 	case AttributeType::Vector2Df:
-		m_Attributes->addVector2d(n.c_str(), *((Vector2Df^)value)->m_NativeValue);
+		m_Attributes->addVector2d(n.c_str(), ((Vector2Df)value).ToNative());
 		return;
 
 	case AttributeType::Recti:
-		m_Attributes->addRect(n.c_str(), *((Recti^)value)->m_NativeValue);
+		m_Attributes->addRect(n.c_str(), ((Recti)value).ToNative());
 		return;
 
 	case AttributeType::Matrix:
@@ -147,7 +147,7 @@ void Attributes::AddValue(String^ attributeName, Object^ value)
 		return;
 
 	case AttributeType::Quaternion:
-		m_Attributes->addQuaternion(n.c_str(), *((Quaternion^)value)->m_NativeValue);
+		m_Attributes->addQuaternion(n.c_str(), ((Quaternion)value).ToNative());
 		return;
 
 	case AttributeType::AABBox:
@@ -159,11 +159,11 @@ void Attributes::AddValue(String^ attributeName, Object^ value)
 		return;
 
 	case AttributeType::Triangle3Df:
-		m_Attributes->addTriangle3d(n.c_str(), *((Triangle3Df^)value)->m_NativeValue);
+		m_Attributes->addTriangle3d(n.c_str(), ((Triangle3Df)value).ToNative());
 		return;
 
 	case AttributeType::Line3Df:
-		m_Attributes->addLine3d(n.c_str(), *((Line3Df^)value)->m_NativeValue);
+		m_Attributes->addLine3d(n.c_str(), ((Line3Df)value).ToNative());
 		return;
 
 	case AttributeType::StringArray:
@@ -283,19 +283,19 @@ Object^ Attributes::GetValue(int attributeIndex)
 		return gcnew String(m_Attributes->getAttributeAsEnumeration(attributeIndex));
 
 	case AttributeType::Color:
-		return gcnew Video::Color(m_Attributes->getAttributeAsColor(attributeIndex));
+		return Video::Color(m_Attributes->getAttributeAsColor(attributeIndex));
 
 	case AttributeType::Colorf:
-		return gcnew Video::Colorf(m_Attributes->getAttributeAsColorf(attributeIndex));
+		return Video::Colorf(m_Attributes->getAttributeAsColorf(attributeIndex));
 
 	case AttributeType::Vector3Df:
-		return gcnew Vector3Df(m_Attributes->getAttributeAsVector3d(attributeIndex));
+		return Vector3Df(m_Attributes->getAttributeAsVector3d(attributeIndex));
 
 	case AttributeType::Vector2Di:
-		return gcnew Vector2Di(m_Attributes->getAttributeAsPosition2d(attributeIndex));
+		return Vector2Di(m_Attributes->getAttributeAsPosition2d(attributeIndex));
 
 	case AttributeType::Vector2Df:
-		return gcnew Vector2Df(m_Attributes->getAttributeAsVector2d(attributeIndex));
+		return Vector2Df(m_Attributes->getAttributeAsVector2d(attributeIndex));
 
 	case AttributeType::Recti:
 		return gcnew Recti(m_Attributes->getAttributeAsRect(attributeIndex));
@@ -313,10 +313,10 @@ Object^ Attributes::GetValue(int attributeIndex)
 		return gcnew Plane3Df(m_Attributes->getAttributeAsPlane3d(attributeIndex));
 
 	case AttributeType::Triangle3Df:
-		return gcnew Triangle3Df(m_Attributes->getAttributeAsTriangle3d(attributeIndex));
+		return Triangle3Df(m_Attributes->getAttributeAsTriangle3d(attributeIndex));
 
 	case AttributeType::Line3Df:
-		return gcnew Line3Df(m_Attributes->getAttributeAsLine3d(attributeIndex));
+		return Line3Df(m_Attributes->getAttributeAsLine3d(attributeIndex));
 
 	case AttributeType::StringArray:
 		{
@@ -402,27 +402,27 @@ void Attributes::SetValue(int attributeIndex, Object^ value)
 		}
 
 	case AttributeType::Color:
-		m_Attributes->setAttribute(attributeIndex, *((Video::Color^)value)->m_NativeValue);
+		m_Attributes->setAttribute(attributeIndex, (Video::Color)value);
 		return;
 
 	case AttributeType::Colorf:
-		m_Attributes->setAttribute(attributeIndex, *((Video::Colorf^)value)->m_NativeValue);
+		m_Attributes->setAttribute(attributeIndex, (Video::Colorf)value);
 		return;
 
 	case AttributeType::Vector3Df:
-		m_Attributes->setAttribute(attributeIndex, *((Vector3Df^)value)->m_NativeValue);
+		m_Attributes->setAttribute(attributeIndex, ((Vector3Df)value).ToNative());
 		return;
 
 	case AttributeType::Vector2Di:
-		m_Attributes->setAttribute(attributeIndex, *((Vector2Di^)value)->m_NativeValue);
+		m_Attributes->setAttribute(attributeIndex, ((Vector2Di)value).ToNative());
 		return;
 
 	case AttributeType::Vector2Df:
-		m_Attributes->setAttribute(attributeIndex, *((Vector2Df^)value)->m_NativeValue);
+		m_Attributes->setAttribute(attributeIndex, ((Vector2Df)value).ToNative());
 		return;
 
 	case AttributeType::Recti:
-		m_Attributes->setAttribute(attributeIndex, *((Recti^)value)->m_NativeValue);
+		m_Attributes->setAttribute(attributeIndex, ((Recti)value).ToNative());
 		return;
 
 	case AttributeType::Matrix:
@@ -430,7 +430,7 @@ void Attributes::SetValue(int attributeIndex, Object^ value)
 		return;
 
 	case AttributeType::Quaternion:
-		m_Attributes->setAttribute(attributeIndex, *((Quaternion^)value)->m_NativeValue);
+		m_Attributes->setAttribute(attributeIndex, ((Quaternion)value).ToNative());
 		return;
 
 	case AttributeType::AABBox:
@@ -442,11 +442,11 @@ void Attributes::SetValue(int attributeIndex, Object^ value)
 		return;
 
 	case AttributeType::Triangle3Df:
-		m_Attributes->setAttribute(attributeIndex, *((Triangle3Df^)value)->m_NativeValue);
+		m_Attributes->setAttribute(attributeIndex, ((Triangle3Df)value).ToNative());
 		return;
 
 	case AttributeType::Line3Df:
-		m_Attributes->setAttribute(attributeIndex, *((Line3Df^)value)->m_NativeValue);
+		m_Attributes->setAttribute(attributeIndex, ((Line3Df)value).ToNative());
 		return;
 
 	case AttributeType::StringArray:

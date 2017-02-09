@@ -15,6 +15,7 @@ namespace gui
 {
 	class IGUIFont;
 	class IGUITreeView;
+	class IGUIScrollBar;
 
 
 	//! Node for gui tree view
@@ -252,6 +253,19 @@ namespace gui
 		*/
 		virtual void setIconFont( IGUIFont* font ) = 0;
 
+		//! Sets a skin independent font.
+		/** \param font: New font to set or 0 to use the skin-font. */
+		virtual void setOverrideFont(IGUIFont* font=0) = 0;
+
+		//! Gets the override font (if any)
+		/** \return The override font (may be 0) */
+		virtual IGUIFont* getOverrideFont(void) const = 0;
+
+		//! Get the font which is used for drawing
+		/** This is the override font when one is set and the
+		font of the skin otherwise. */
+		virtual IGUIFont* getActiveFont() const = 0;
+
 		//! Sets the image list which should be used for the image and selected image of every node.
 		/** The default is 0 (no images). */
 		virtual void setImageList( IGUIImageList* imageList ) = 0;
@@ -268,6 +282,12 @@ namespace gui
 		//! Returns the node which is associated to the last event.
 		/** This pointer is only valid inside the OnEvent call! */
 		virtual IGUITreeViewNode* getLastEventNode() const = 0;
+
+		//! Access the vertical scrollbar
+		virtual IGUIScrollBar* getVerticalScrollBar() const = 0;
+
+		//! Access the horizontal scrollbar
+		virtual IGUIScrollBar* getHorizontalScrollBar() const = 0;
 	};
 
 

@@ -4,6 +4,7 @@
 #include "GUIImageList.h"
 #include "GUITreeView.h"
 #include "GUITreeViewNode.h"
+#include "GUIScrollBar.h"
 
 using namespace irr;
 using namespace System;
@@ -29,6 +30,16 @@ GUITreeView::GUITreeView(gui::IGUITreeView* ref)
 void GUITreeView::SetIconFont(GUIFont^ font)
 {
 	m_GUITreeView->setIconFont(LIME_SAFEREF(font, m_GUIFont));
+}
+
+GUIFont^ GUITreeView::ActiveFont::get()
+{
+	return GUIFont::Wrap(m_GUITreeView->getActiveFont());
+}
+
+GUIScrollBar^ GUITreeView::HorizontalScrollBar::get()
+{
+	return GUIScrollBar::Wrap(m_GUITreeView->getHorizontalScrollBar());
 }
 
 bool GUITreeView::ImageLeftOfIcon::get()
@@ -68,6 +79,16 @@ void GUITreeView::LinesVisible::set(bool value)
 	m_GUITreeView->setLinesVisible(value);
 }
 
+GUIFont^ GUITreeView::OverrideFont::get()
+{
+	return GUIFont::Wrap(m_GUITreeView->getOverrideFont());
+}
+
+void GUITreeView::OverrideFont::set(GUIFont^ value)
+{
+	m_GUITreeView->setOverrideFont(LIME_SAFEREF(value, m_GUIFont));
+}
+
 GUITreeViewNode^ GUITreeView::RootNode::get()
 {
 	gui::IGUITreeViewNode* n = m_GUITreeView->getRoot();
@@ -78,6 +99,11 @@ GUITreeViewNode^ GUITreeView::SelectedNode::get()
 {
 	gui::IGUITreeViewNode* n = m_GUITreeView->getSelected();
 	return GUITreeViewNode::Wrap(n);
+}
+
+GUIScrollBar^ GUITreeView::VerticalScrollBar::get()
+{
+	return GUIScrollBar::Wrap(m_GUITreeView->getVerticalScrollBar());
 }
 
 } // end namespace GUI

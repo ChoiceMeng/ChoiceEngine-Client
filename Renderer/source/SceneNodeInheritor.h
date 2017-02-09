@@ -23,6 +23,12 @@ public:
 	{
 	}
 
+	virtual ~SceneNodeInheritor()
+	{
+		SceneNode^ node = m_userSceneNode;	//without gcroot
+		delete node;	//Call Dispose if node is IDisposable
+	}
+
 	gcroot<SceneNode::AnimateEventHandler^> m_OnAnimateHandler;
 	virtual void OnAnimate(u32 timeMs)
 	{
@@ -69,6 +75,7 @@ public:
 			return *((video::SMaterial*)0);
 	}
 
+	gcroot<SceneNode^> m_userSceneNode;
 // internal:
 
 	void AbsoluteTransformation_set(const core::matrix4& value)

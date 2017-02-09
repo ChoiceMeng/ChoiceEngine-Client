@@ -41,6 +41,11 @@ ReadFile^ FileArchive::CreateAndOpenFile(String^ filename)
 	return ReadFile::Wrap(f);
 }
 
+String^ FileArchive::ArchiveName::get()
+{
+	return gcnew String(m_FileArchive->getArchiveName().c_str());
+}
+
 IrrlichtLime::IO::FileList^ FileArchive::FileList::get()
 {
 	io::IFileList* l = (io::IFileList*)m_FileArchive->getFileList(); // !!! cast to non-const
@@ -61,11 +66,6 @@ void FileArchive::Password::set(String^ value)
 FileArchiveType FileArchive::Type::get()
 {
 	return (FileArchiveType)m_FileArchive->getType();
-}
-
-String^ FileArchive::ArchiveName::get()
-{
-	return gcnew String(m_FileArchive->getArchiveName().c_str());
 }
 
 } // end namespace IO

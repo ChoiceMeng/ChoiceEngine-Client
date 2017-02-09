@@ -34,6 +34,10 @@ namespace irr
 		class ISceneManager;
 	} // end namespace scene
 
+	namespace video {
+		class IContextManager;
+	} // end namespace video
+
 	//! The Irrlicht device. You can create it with createDevice() or createDeviceEx().
 	/** This is the most important class of the Irrlicht Engine. You can
 	access everything in the engine if you have a pointer to an instance of
@@ -108,15 +112,15 @@ namespace irr
 		virtual ILogger* getLogger() = 0;
 
 		//! Gets a list with all video modes available.
-		/** If you are confused now, because you think you have to
-		create an Irrlicht Device with a video mode before being able
-		to get the video mode list, let me tell you that there is no
-		need to start up an Irrlicht Device with EDT_DIRECT3D8,
-		EDT_OPENGL or EDT_SOFTWARE: For this (and for lots of other
-		reasons) the null driver, EDT_NULL exists.
+		/** You only need a null driver (ED_NULL) to access 
+		those video modes. So you can get the available modes 
+		before starting any other video driver.
 		\return Pointer to a list with all video modes supported
 		by the gfx adapter. */
 		virtual video::IVideoModeList* getVideoModeList() = 0;
+
+		//! Get context manager
+		virtual video::IContextManager* getContextManager() = 0;
 
 		//! Provides access to the operation system operator object.
 		/** The OS operator provides methods for
@@ -227,6 +231,13 @@ namespace irr
 		\param resize Flag whether the window should be resizable. */
 		virtual void setResizable(bool resize=false) = 0;
 
+		//! Resize the render window.
+		/**	This will only work in windowed mode and is not yet supported on all systems.
+		It does set the drawing/clientDC size of the window, the window decorations are added to that.
+		You get the current window size with IVideoDriver::getScreenSize() (might be unified in future)
+		*/
+		virtual void setWindowSize(const irr::core::dimension2d<u32>& size) = 0;
+
 		//! Minimizes the window if possible.
 		virtual void minimizeWindow() =0;
 
@@ -303,12 +314,6 @@ namespace irr
 #endif
 				case video::EDT_BURNINGSVIDEO:
 #ifdef _IRR_COMPILE_WITH_BURNINGSVIDEO_
-					return true;
-#else
-					return false;
-#endif
-				case video::EDT_DIRECT3D8:
-#ifdef _IRR_COMPILE_WITH_DIRECT3D_8_
 					return true;
 #else
 					return false;

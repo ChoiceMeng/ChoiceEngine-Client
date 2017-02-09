@@ -315,7 +315,7 @@ struct SEvent
 	//! Any kind of keyboard event.
 	struct SKeyInput
 	{
-		//! Character corresponding to the key (0, if not a character)
+		//! Character corresponding to the key (0, if not a character, value undefined in key releases)
 		wchar_t Char;
 
 		//! Key which has been pressed or released
@@ -351,7 +351,7 @@ struct SEvent
 			AXIS_R,		// e.g. rudder, or analog 2 stick 2 top to bottom
 			AXIS_U,
 			AXIS_V,
-			NUMBER_OF_AXES
+			NUMBER_OF_AXES=18	// (please tell Irrlicht maintainers if you absolutely need more axes)
 		};
 
 		/** A bitmap of button states.  You can use IsButtonPressed() to

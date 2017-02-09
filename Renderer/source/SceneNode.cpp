@@ -18,6 +18,7 @@
 #include "Texture.h"
 #include "TriangleSelector.h"
 #include "VolumeLightSceneNode.h"
+#include <exception>
 
 using namespace irr;
 using namespace System;
@@ -79,6 +80,12 @@ SceneNode^ SceneNode::Wrap(scene::ISceneNode* ref)
 	case scene::ESNT_SKY_DOME:
 	case scene::ESNT_EMPTY:
 	default:
+		try {
+			SceneNodeInheritor * node;
+			node = dynamic_cast<SceneNodeInheritor*> (ref);
+			if (node != 0)
+				return node->m_userSceneNode;
+		} catch (...){}
 		return gcnew SceneNode(ref);
 	}
 }
@@ -91,20 +98,16 @@ SceneNode::SceneNode(scene::ISceneNode* ref)
 	m_Inherited = false;
 }
 
-SceneNode::SceneNode(SceneNode^ parent, Scene::SceneManager^ manager, int id, Vector3Df^ position, Vector3Df^ rotation, Vector3Df^ scale)
+SceneNode::SceneNode(SceneNode^ parent, Scene::SceneManager^ manager, int id, Vector3Df position, Vector3Df rotation, Vector3Df scale)
 	: IO::AttributeExchangingObject(nullptr)
 {
-	LIME_ASSERT(position != nullptr);
-	LIME_ASSERT(rotation != nullptr);
-	LIME_ASSERT(scale != nullptr);
-
 	SceneNodeInheritor* i = new SceneNodeInheritor(
 		LIME_SAFEREF(parent, m_SceneNode),
 		LIME_SAFEREF(manager, m_SceneManager),
 		id,
-		*position->m_NativeValue,
-		*rotation->m_NativeValue,
-		*scale->m_NativeValue);
+		position,
+		rotation,
+		scale);
 
 	initInheritor(i);
 	setAttributeExchangingObject(i);
@@ -112,18 +115,15 @@ SceneNode::SceneNode(SceneNode^ parent, Scene::SceneManager^ manager, int id, Ve
 	m_Inherited = true;
 }
 
-SceneNode::SceneNode(SceneNode^ parent, Scene::SceneManager^ manager, int id, Vector3Df^ position, Vector3Df^ rotation)
+SceneNode::SceneNode(SceneNode^ parent, Scene::SceneManager^ manager, int id, Vector3Df position, Vector3Df rotation)
 	: IO::AttributeExchangingObject(nullptr)
 {
-	LIME_ASSERT(position != nullptr);
-	LIME_ASSERT(rotation != nullptr);
-
 	SceneNodeInheritor* i = new SceneNodeInheritor(
 		LIME_SAFEREF(parent, m_SceneNode),
 		LIME_SAFEREF(manager, m_SceneManager),
 		id,
-		*position->m_NativeValue,
-		*rotation->m_NativeValue);
+		position,
+		rotation);
 
 	initInheritor(i);
 	setAttributeExchangingObject(i);
@@ -131,16 +131,14 @@ SceneNode::SceneNode(SceneNode^ parent, Scene::SceneManager^ manager, int id, Ve
 	m_Inherited = true;
 }
 
-SceneNode::SceneNode(SceneNode^ parent, Scene::SceneManager^ manager, int id, Vector3Df^ position)
+SceneNode::SceneNode(SceneNode^ parent, Scene::SceneManager^ manager, int id, Vector3Df position)
 	: IO::AttributeExchangingObject(nullptr)
 {
-	LIME_ASSERT(position != nullptr);
-
 	SceneNodeInheritor* i = new SceneNodeInheritor(
 		LIME_SAFEREF(parent, m_SceneNode),
 		LIME_SAFEREF(manager, m_SceneManager),
 		id,
-		*position->m_NativeValue);
+		position);
 
 	initInheritor(i);
 	setAttributeExchangingObject(i);
@@ -289,9 +287,9 @@ void SceneNode::UpdateAbsolutePosition()
 	m_SceneNode->updateAbsolutePosition();
 }
 
-Vector3Df^ SceneNode::AbsolutePosition::get()
+Vector3Df SceneNode::AbsolutePosition::get()
 {
-	return gcnew Vector3Df(m_SceneNode->getAbsolutePosition());
+	return Vector3Df(m_SceneNode->getAbsolutePosition());
 }
 
 Matrix^ SceneNode::AbsoluteTransformation::get()
@@ -308,19 +306,9 @@ void SceneNode::AbsoluteTransformation::set(Matrix^ value)
 	i->AbsoluteTransformation_set(*value->m_NativeValue);
 }
 
-List<SceneNodeAnimator^>^ SceneNode::AnimatorList::get()
+NativeCollection<SceneNodeAnimator^>^ SceneNode::AnimatorList::get()
 {
-	List<SceneNodeAnimator^>^ l = gcnew List<SceneNodeAnimator^>();
-
-	core::list<scene::ISceneNodeAnimator*> a = m_SceneNode->getAnimators();
-	for (core::list<scene::ISceneNodeAnimator*>::ConstIterator i = a.begin(); i != a.end(); ++i)
-	{
-		SceneNodeAnimator^ n = SceneNodeAnimator::Wrap(*i);
-		if (n != nullptr)
-			l->Add(n);
-	}
-
-	return l;
+	return gcnew CollectionIrrListTemplate<SceneNodeAnimator^, SceneNodeAnimator, scene::ISceneNodeAnimator>(m_SceneNode->getAnimators());
 }
 
 CullingType SceneNode::AutomaticCulling::get()
@@ -362,15 +350,15 @@ AABBox^ SceneNode::BoundingBoxTransformed::get()
 	return gcnew AABBox(m_SceneNode->getTransformedBoundingBox());
 }
 
-array<Vector3Df^>^ SceneNode::BoundingBoxTransformedEdges::get()
+array<Vector3Df>^ SceneNode::BoundingBoxTransformedEdges::get()
 {
 #if _DEBUG
 	// this allows to browse properties of the root scene node in debugger when you stop code execution (on breakpoint, etc.)
 	if (m_SceneNode == m_SceneNode->getSceneManager()->getRootSceneNode())
 	{
-		array<Vector3Df^>^ m = gcnew array<Vector3Df^>(8);
+		array<Vector3Df>^ m = gcnew array<Vector3Df>(8);
 		for (int i = 0; i < 8; i++)
-			m[i] = gcnew Vector3Df();
+			m[i] = Vector3Df();
 
 		return m;
 	}
@@ -380,27 +368,16 @@ array<Vector3Df^>^ SceneNode::BoundingBoxTransformedEdges::get()
 	m_SceneNode->getTransformedBoundingBoxEdges(a);
 	LIME_ASSERT(a.size() == 8);
 
-	array<Vector3Df^>^ m = gcnew array<Vector3Df^>(8);
+	array<Vector3Df>^ m = gcnew array<Vector3Df>(8);
 	for (int i = 0; i < 8; i++)
-			m[i] = gcnew Vector3Df(a[i]);
+			m[i] = Vector3Df(a[i]);
 
 	return m;
 }
 
-array<SceneNode^>^ SceneNode::Children::get()
+NativeCollection<SceneNode^>^ SceneNode::Children::get()
 {
-	array<SceneNode^>^ l = gcnew array<SceneNode^>(m_SceneNode->getChildren().size());
-	int li = 0;
-
-	core::list<scene::ISceneNode*> a = m_SceneNode->getChildren();
-	for (core::list<scene::ISceneNode*>::ConstIterator i = a.begin(); i != a.end(); ++i)
-	{
-		SceneNode^ n = Wrap(*i);
-		if (n != nullptr)
-			l[li++] = n;
-	}
-
-	return l;
+	return gcnew CollectionIrrListTemplate<SceneNode^, SceneNode, scene::ISceneNode>(m_SceneNode->getChildren());
 }
 
 DebugSceneType SceneNode::DebugDataVisible::get()
@@ -463,15 +440,14 @@ void SceneNode::Parent::set(SceneNode^ value)
 	m_SceneNode->setParent(value->m_SceneNode);
 }
 
-Vector3Df^ SceneNode::Position::get()
+Vector3Df SceneNode::Position::get()
 {
-	return gcnew Vector3Df(m_SceneNode->getPosition());
+	return Vector3Df(m_SceneNode->getPosition());
 }
 
-void SceneNode::Position::set(Vector3Df^ value)
+void SceneNode::Position::set(Vector3Df value)
 {
-	LIME_ASSERT(value != nullptr);
-	m_SceneNode->setPosition(*value->m_NativeValue);
+	m_SceneNode->setPosition(value);
 }
 
 Matrix^ SceneNode::RelativeTransformation::get()
@@ -479,26 +455,24 @@ Matrix^ SceneNode::RelativeTransformation::get()
 	return gcnew Matrix(m_SceneNode->getRelativeTransformation());
 }
 
-Vector3Df^ SceneNode::Rotation::get()
+Vector3Df SceneNode::Rotation::get()
 {
-	return gcnew Vector3Df(m_SceneNode->getRotation());
+	return Vector3Df(m_SceneNode->getRotation());
 }
 
-void SceneNode::Rotation::set(Vector3Df^ value)
+void SceneNode::Rotation::set(Vector3Df value)
 {
-	LIME_ASSERT(value != nullptr);
-	m_SceneNode->setRotation(*value->m_NativeValue);
+	m_SceneNode->setRotation(value);
 }
 
-Vector3Df^ SceneNode::Scale::get()
+Vector3Df SceneNode::Scale::get()
 {
-	return gcnew Vector3Df(m_SceneNode->getScale());
+	return Vector3Df(m_SceneNode->getScale());
 }
 
-void SceneNode::Scale::set(Vector3Df^ value)
+void SceneNode::Scale::set(Vector3Df value)
 {
-	LIME_ASSERT(value != nullptr);
-	m_SceneNode->setScale(*value->m_NativeValue);
+	m_SceneNode->setScale(value);
 }
 
 Scene::SceneManager^ SceneNode::SceneManager::get()
@@ -557,6 +531,7 @@ void SceneNode::initInheritor(SceneNodeInheritor* i)
 	i->m_getMaterialHandler = gcnew GetMaterialEventHandler(this, &SceneNode::GetMaterial);
 	i->m_OnAnimateHandler = gcnew AnimateEventHandler(this, &SceneNode::Animate);
 	i->m_OnRegisterSceneNodeHandler = gcnew RegisterSceneNodeEventHandler(this, &SceneNode::RegisterSceneNode);
+	i->m_userSceneNode = this;
 }
 
 } // end namespace Scene

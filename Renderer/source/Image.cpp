@@ -19,6 +19,11 @@ bool Image::IsCompressedFormat(Video::ColorFormat format)
 	return video::IImage::isCompressedFormat((ECOLOR_FORMAT)format);
 }
 
+bool Image::IsDepthFormat(Video::ColorFormat format)
+{
+	return video::IImage::isDepthFormat((ECOLOR_FORMAT)format);
+}
+
 bool Image::IsRenderTargetOnlyFormat(Video::ColorFormat format)
 {
 	return video::IImage::isRenderTargetOnlyFormat((ECOLOR_FORMAT)format);
@@ -68,39 +73,34 @@ Image::Image(video::IImage* ref)
 	m_Image = ref;
 }
 
-void Image::CopyTo(Image^ target, Vector2Di^ targetPos, Recti^ sourceRect, Recti^ clipRect)
+void Image::CopyTo(Image^ target, Vector2Di targetPos, Recti sourceRect, Nullable<Recti> clipRect)
 {
 	LIME_ASSERT(target != nullptr);
-	LIME_ASSERT(targetPos != nullptr);
-	LIME_ASSERT(sourceRect != nullptr);
 
 	m_Image->copyTo(
 		target->m_Image,
-		*targetPos->m_NativeValue,
-		*sourceRect->m_NativeValue,
-		LIME_SAFEREF(clipRect, m_NativeValue));
+		targetPos,
+		sourceRect,
+		LIME_NULLABLE(clipRect));
 }
 
-void Image::CopyTo(Image^ target, Vector2Di^ targetPos, Recti^ sourceRect)
+void Image::CopyTo(Image^ target, Vector2Di targetPos, Recti sourceRect)
 {
 	LIME_ASSERT(target != nullptr);
-	LIME_ASSERT(targetPos != nullptr);
-	LIME_ASSERT(sourceRect != nullptr);
 
 	m_Image->copyTo(
 		target->m_Image,
-		*targetPos->m_NativeValue,
-		*sourceRect->m_NativeValue);
+		targetPos,
+		sourceRect);
 }
 
-void Image::CopyTo(Image^ target, Vector2Di^ targetPos)
+void Image::CopyTo(Image^ target, Vector2Di targetPos)
 {
 	LIME_ASSERT(target != nullptr);
-	LIME_ASSERT(targetPos != nullptr);
 
 	m_Image->copyTo(
 		target->m_Image,
-		*targetPos->m_NativeValue);
+		targetPos);
 }
 
 void Image::CopyTo(Image^ target)
@@ -114,16 +114,16 @@ array<unsigned char>^ Image::CopyTo()
 	int s = m_Image->getImageDataSizeInBytes();
 	array<unsigned char>^ r = gcnew array<unsigned char>(s);
 
-	unsigned char* a = (unsigned char*)m_Image->lock();
+	unsigned char* a = (unsigned char*)m_Image->getData();
 	Marshal::Copy(IntPtr(a), r, 0, s);
-	m_Image->unlock();
 	
 	return r;
 }
 
 System::Drawing::Bitmap^ Image::CopyToBitmap()
 {
-	LIME_ASSERT(GetPixelFormat(ColorFormat) != System::Drawing::Imaging::PixelFormat::Undefined);
+	if (GetPixelFormat(ColorFormat) == System::Drawing::Imaging::PixelFormat::Undefined)	//return null, if the format is not supported
+		return nullptr;
 
 	System::Drawing::Bitmap^ b = gcnew System::Drawing::Bitmap(
 		m_Image->getDimension().Width,
@@ -233,65 +233,56 @@ void Image::CopyToScalingBoxFilter(Image^ target)
 	m_Image->copyToScalingBoxFilter(target->m_Image);
 }
 
-void Image::CopyToWithAlpha(Image^ target, Vector2Di^ targetPos, Recti^ sourceRect, Color^ color, Recti^ clipRect)
+void Image::CopyToWithAlpha(Image^ target, Vector2Di targetPos, Recti sourceRect, Color color, Nullable<Recti> clipRect)
 {
 	LIME_ASSERT(target != nullptr);
-	LIME_ASSERT(targetPos != nullptr);
-	LIME_ASSERT(sourceRect != nullptr);
-	LIME_ASSERT(color != nullptr);
 
 	m_Image->copyToWithAlpha(
 		target->m_Image,
-		*targetPos->m_NativeValue,
-		*sourceRect->m_NativeValue,
-		*color->m_NativeValue,
-		LIME_SAFEREF(clipRect, m_NativeValue));
+		targetPos,
+		sourceRect,
+		color,
+		LIME_NULLABLE(clipRect));
 }
 
-void Image::CopyToWithAlpha(Image^ target, Vector2Di^ targetPos, Recti^ sourceRect, Color^ color)
+void Image::CopyToWithAlpha(Image^ target, Vector2Di targetPos, Recti sourceRect, Color color)
 {
 	LIME_ASSERT(target != nullptr);
-	LIME_ASSERT(targetPos != nullptr);
-	LIME_ASSERT(sourceRect != nullptr);
-	LIME_ASSERT(color != nullptr);
 
 	m_Image->copyToWithAlpha(
 		target->m_Image,
-		*targetPos->m_NativeValue,
-		*sourceRect->m_NativeValue,
-		*color->m_NativeValue);
+		targetPos,
+		sourceRect,
+		color);
 }
 
-void Image::Fill(Color^ color)
+void Image::Fill(Color color)
 {
-	LIME_ASSERT(color != nullptr);
-	m_Image->fill(*color->m_NativeValue);
+	m_Image->fill(color);
 }
 
-Color^ Image::GetPixel(int x, int y)
+Color Image::GetPixel(int x, int y)
+{
+	LIME_ASSERT(x >= 0 && x < Dimension->Width);
+	LIME_ASSERT(y >= 0 && y < Dimension->Height);
+
+	return Color(m_Image->getPixel(x, y));
+}
+
+void Image::SetPixel(int x, int y, Color color, bool blend)
 {
 	LIME_ASSERT(x >= 0 && x < Dimension->Width);
 	LIME_ASSERT(y >= 0 && y < Dimension->Height);
 
-	return gcnew Color(m_Image->getPixel(x, y));
+	m_Image->setPixel(x, y, color, blend);
 }
 
-void Image::SetPixel(int x, int y, Color^ color, bool blend)
+void Image::SetPixel(int x, int y, Color color)
 {
 	LIME_ASSERT(x >= 0 && x < Dimension->Width);
 	LIME_ASSERT(y >= 0 && y < Dimension->Height);
-	LIME_ASSERT(color != nullptr);
 
-	m_Image->setPixel(x, y, *color->m_NativeValue, blend);
-}
-
-void Image::SetPixel(int x, int y, Color^ color)
-{
-	LIME_ASSERT(x >= 0 && x < Dimension->Width);
-	LIME_ASSERT(y >= 0 && y < Dimension->Height);
-	LIME_ASSERT(color != nullptr);
-
-	m_Image->setPixel(x, y, *color->m_NativeValue);
+	m_Image->setPixel(x, y, color);
 }
 
 int Image::BitsPerPixel::get()
@@ -334,22 +325,22 @@ bool Image::MipMaps::get()
 	return m_Image->hasMipMaps();
 }
 
-int Image::RedMask::get()
+unsigned int Image::RedMask::get()
 {
 	return m_Image->getRedMask();
 }
 
-int Image::GreenMask::get()
+unsigned int Image::GreenMask::get()
 {
 	return m_Image->getGreenMask();
 }
 
-int Image::BlueMask::get()
+unsigned int Image::BlueMask::get()
 {
 	return m_Image->getBlueMask();
 }
 
-int Image::AlphaMask::get()
+unsigned int Image::AlphaMask::get()
 {
 	return m_Image->getAlphaMask();
 }

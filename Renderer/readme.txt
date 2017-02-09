@@ -79,7 +79,7 @@ The Irrlicht Lime SDK
   The Irrlicht Lime License
   =========================
 
-  Copyright (C) 2010-2013 Yuriy Grinevich
+  Copyright (C) 2010-2016 Yuriy Grinevich
 
   This software is provided 'as-is', without any express or implied
   warranty. In no event will the authors be held liable for any damages
@@ -108,13 +108,13 @@ The Irrlicht Lime SDK
 
   Email:
   greenya@users.sourceforge.net
+  f-o-a-l-y@users.sf.net
 
   The official homepage:
   http://irrlichtlime.sourceforge.net
 
   Additional information (discussion thread):
-  English: http://irrlicht.sourceforge.net/forum/viewtopic.php?f=6&t=38512
-  Russian: http://www.irrlicht.ru/forum/viewtopic.php?f=3&t=118
+  http://irrlicht.sourceforge.net/forum/viewtopic.php?f=6&t=38512
 
   If you found bug, please sumbit it at:
   http://sourceforge.net/p/irrlichtlime/bugs/

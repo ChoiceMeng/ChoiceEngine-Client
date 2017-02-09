@@ -27,7 +27,15 @@ This means that c8 strings are treated as ASCII/Latin-1, not UTF-8, and
 are simply expanded to the equivalent wchar_t, while Unicode/wchar_t
 characters are truncated to 8-bit ASCII/Latin-1 characters, discarding all
 other information in the wchar_t.
+
+Helper functions for converting between UTF-8 and wchar_t are provided
+outside the string class for explicit use.
 */
+
+// forward declarations
+template <typename T, typename TAlloc = irrAllocator<T> >
+class string;
+static size_t multibyteToWString(string<wchar_t>& destination, const char* source, u32 sourceSize);
 
 enum eLocaleID
 {
@@ -68,8 +76,20 @@ static inline u32 locale_upper ( u32 x )
 	return x >= 'a' && x <= 'z' ? x + ( 'A' - 'a' ) : x;
 }
 
+//! Convert this utf-8-encoded string to the platform's wchar.
+/** The resulting string is always NULL-terminated and well-formed.
+\param len The size of the output buffer in bytes.
+*/
+IRRLICHT_API void utf8ToWchar(const char *in, wchar_t *out, const u64 len);
 
-template <typename T, typename TAlloc = irrAllocator<T> >
+//! Convert this wchar string to utf-8.
+/** The resulting string is always NULL-terminated and well-formed.
+\param len The size of the output buffer in bytes.
+*/
+IRRLICHT_API void wcharToUtf8(const wchar_t *in, char *out, const u64 len);
+
+
+template <typename T, typename TAlloc>
 class string
 {
 public:
@@ -106,7 +126,7 @@ public:
 	: array(0), allocated(0), used(0)
 	{
 		c8 tmpbuf[255];
-		snprintf(tmpbuf, 255, "%0.6f", number);
+		snprintf_irr(tmpbuf, 255, "%0.6f", number);
 		*this = tmpbuf;
 	}
 
@@ -569,7 +589,7 @@ public:
 	bool equalsn(const string<T,TAlloc>& other, u32 n) const
 	{
 		u32 i;
-		for(i=0; array[i] && other[i] && i < n; ++i)
+		for(i=0; i < n && array[i] && other[i]; ++i)
 			if (array[i] != other[i])
 				return false;
 
@@ -588,7 +608,7 @@ public:
 		if (!str)
 			return false;
 		u32 i;
-		for(i=0; array[i] && str[i] && i < n; ++i)
+		for(i=0; i < n && array[i] && str[i]; ++i)
 			if (array[i] != str[i])
 				return false;
 
@@ -1325,6 +1345,8 @@ public:
 		return ret.size()-oldSize;
 	}
 
+	friend size_t multibyteToWString(string<wchar_t>& destination, const char* source, u32 sourceSize);
+
 private:
 
 	//! Reallocate the array, make it bigger or smaller
@@ -1359,6 +1381,54 @@ typedef string<c8> stringc;
 
 //! Typedef for wide character strings
 typedef string<wchar_t> stringw;
+
+//! Convert multibyte string to wide-character string
+/** Wrapper around mbstowcs from standard library, but directly using Irrlicht string class.
+What the function does exactly depends on the LC_CTYPE of the current c locale.
+\param destination Wide-character string receiving the converted source
+\param source multibyte string
+\return The number of wide characters written to destination, not including the eventual terminating null character. */
+static inline size_t multibyteToWString(string<wchar_t>& destination, const core::string<c8>& source)
+{
+	return multibyteToWString(destination, source.c_str(), (u32)source.size());
+}
+
+//! Convert multibyte string to wide-character string
+/** Wrapper around mbstowcs from standard library, but directly writing to Irrlicht string class.
+What the function does exactly depends on the LC_CTYPE of the current c locale.
+\param destination Wide-character string receiving the converted source
+\param source multibyte string
+\return The number of wide characters written to destination, not including the eventual terminating null character. */
+static inline size_t multibyteToWString(string<wchar_t>& destination, const char* source)
+{
+	u32 s = source ? (u32)strlen(source) : 0;
+	return multibyteToWString(destination, source, s);
+}
+
+//! Internally used by the other multibyteToWString functions
+static size_t multibyteToWString(string<wchar_t>& destination, const char* source, u32 sourceSize)
+{
+	if ( sourceSize )
+	{
+		destination.reserve(sourceSize+1);
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4996)	// 'mbstowcs': This function or variable may be unsafe. Consider using mbstowcs_s instead.
+#endif
+		size_t written = mbstowcs(destination.array, source, (size_t)sourceSize);
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+		destination.used = (u32)written;
+		destination.array[destination.used] = 0;
+		return written;
+	}
+	else
+	{
+		destination.empty();
+		return 0;
+	}
+}
 
 
 } // end namespace core
